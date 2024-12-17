@@ -13,7 +13,7 @@ We will discuss setting up the environment, installing development tools, instal
 
 ## Overall process
 
-The brew deployment is completely automated, and only requires a trigger to [`Release on Homebrew`](https://github.com/httpie/httpie/actions/workflows/release-brew.yml) action
+The brew deployment is completely automated, and only requires a trigger to [`Release on Homebrew`](https://github.com/httpie/cli/actions/workflows/release-brew.yml) action
 from the release manager.
 
 If it is needed to be done manually, the following command can be used:
@@ -22,10 +22,10 @@ If it is needed to be done manually, the following command can be used:
 $ brew bump-formula-pr httpie --version={TARGET_VERSION}
 ```
 
-which will bump the formala, and create a PR against the package index.
+which will bump the formula, and create a PR against the package index.
 
 ## Hacking
 
-Make your changes, test the formula through the [`Test Brew Package`](https://github.com/httpie/httpie/actions/workflows/test-package-mac-brew.yml) action
+Make your changes, test the formula through the [`Test Brew Package`](https://github.com/httpie/cli/actions/workflows/test-package-mac-brew.yml) action
 and then finally submit your patch to [`homebrew-core`](https://github.com/Homebrew/homebrew-core`)
 

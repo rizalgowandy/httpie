@@ -22,6 +22,26 @@ VENV_PYTHON=$(VENV_BIN)/python
 export PATH := $(VENV_BIN):$(PATH)
 
 
+
+default: list-tasks
+
+
+###############################################################################
+# Default task to get a list of tasks when `make' is run without args.
+# <https://stackoverflow.com/questions/4219255>
+###############################################################################
+
+list-tasks:
+	@echo Available tasks:
+	@echo ----------------
+	@$(MAKE) -pRrq -f $(lastword $(MAKEFILE_LIST)) : 2>/dev/null | awk -v RS= -F: '/^# File/,/^# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | sort | grep -E -v -e '^[^[:alnum:]]' -e '^$@$$'
+	@echo
+
+
+###############################################################################
+# Installation
+###############################################################################
+
 all: uninstall-httpie install test
 
 
@@ -30,10 +50,10 @@ install: venv install-reqs
 
 install-reqs:
 	@echo $(H1)Updating package tools$(H1END)
-	$(VENV_PIP) install --upgrade pip wheel
+	$(VENV_PIP) install --upgrade pip wheel build
 
 	@echo $(H1)Installing dev requirements$(H1END)
-	$(VENV_PIP) install --upgrade --editable '.[dev]'
+	$(VENV_PIP) install --upgrade '.[dev]' '.[test]'
 
 	@echo $(H1)Installing HTTPie$(H1END)
 	$(VENV_PIP) install --upgrade --editable .
@@ -104,7 +124,8 @@ test-dist: test-sdist test-bdist-wheel
 
 test-sdist: clean venv
 	@echo $(H1)Testing sdist build an installation$(H1END)
-	$(VENV_PYTHON) setup.py sdist
+	$(VENV_PIP) install build
+	$(VENV_PYTHON) -m build --sdist
 	$(VENV_PIP) install --force-reinstall --upgrade dist/*.gz
 	$(VENV_BIN)/http --version
 	@echo
@@ -112,8 +133,8 @@ test-sdist: clean venv
 
 test-bdist-wheel: clean venv
 	@echo $(H1)Testing wheel build an installation$(H1END)
-	$(VENV_PIP) install wheel
-	$(VENV_PYTHON) setup.py bdist_wheel
+	$(VENV_PIP) install build
+	$(VENV_PYTHON) -m build --wheel
 	$(VENV_PIP) install --force-reinstall --upgrade dist/*.whl
 	$(VENV_BIN)/http --version
 	@echo
@@ -153,8 +174,11 @@ doc-check:
 
 
 build:
-	rm -rf build/
-	$(VENV_PYTHON) setup.py sdist bdist_wheel
+	rm -rf build/ dist/
+	mv httpie/internal/__build_channel__.py httpie/internal/__build_channel__.py.original
+	echo 'BUILD_CHANNEL = "pip"' > httpie/internal/__build_channel__.py
+	$(VENV_PYTHON) -m build --sdist --wheel --outdir dist/
+	mv httpie/internal/__build_channel__.py.original httpie/internal/__build_channel__.py
 
 
 publish: test-all publish-no-test
@@ -198,7 +222,7 @@ brew-test:
 	- brew uninstall httpie
 
 	@echo $(H1)Building from source…$(H1END)
-	- brew install --build-from-source ./docs/packaging/brew/httpie.rb
+	- brew install --HEAD --build-from-source ./docs/packaging/brew/httpie.rb
 
 	@echo $(H1)Verifying…$(H1END)
 	http --version
@@ -208,15 +232,15 @@ brew-test:
 	brew audit --strict httpie
 
 ###############################################################################
-# Regeneration
+# Generated content
 ###############################################################################
 
-regen-all: regen-man-pages regen-install-methods
+content: man installation-docs
 
-regen-man-pages: install
+man: install
 	@echo $(H1)Regenerate man pages$(H1END)
 	$(VENV_PYTHON) extras/scripts/generate_man_pages.py
 
-regen-install-methods:
+installation-docs:
 	@echo $(H1)Updating installation instructions in the docs$(H1END)
 	$(VENV_PYTHON) docs/installation/generate.py

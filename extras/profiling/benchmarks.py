@@ -9,11 +9,11 @@ timings.
 
 The benchmarks are run through 'pyperf', which allows to
 do get very precise results. For micro-benchmarks like startup,
-please run `pyperf system tune` to get even more acurrate results.
+please run `pyperf system tune` to get even more accurate results.
 
 Examples:
 
-    # Run everything as usual, the default is that we do 3 warmup runs
+    # Run everything as usual, the default is that we do 3 warm-up runs
     # and 5 actual runs.
     $ python extras/profiling/benchmarks.py
 
@@ -21,7 +21,7 @@ Examples:
     $ python extras/profiling/benchmarks.py --fast
 
     # For verify everything works as expected, pass --debug-single-value.
-    # It will only run everything once, so the resuls are not realiable. But
+    # It will only run everything once, so the resuls are not reliable. But
     # very useful when iterating on a benchmark
     $ python extras/profiling/benchmarks.py --debug-single-value
 
@@ -188,7 +188,7 @@ DownloadRunner('download', '`http --download :/big_file.txt` (3GB)', '3G')
 def main() -> None:
     # PyPerf will bring it's own argument parser, so configure the script.
     # The somewhat fast and also precise enough configuration is this. We run
-    # benchmarks 3 times to warmup (e.g especially for download benchmark, this
+    # benchmarks 3 times to warm up (e.g especially for download benchmark, this
     # is important). And then 5 actual runs where we record.
     sys.argv.extend(
         ['--worker', '--loops=1', '--warmup=3', '--values=5', '--processes=2']

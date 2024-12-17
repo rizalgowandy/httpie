@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import textwrap
 from argparse import FileType
 
@@ -20,31 +21,33 @@ from httpie.output.formatters.colors import (AUTO_STYLE, DEFAULT_STYLE, BUNDLED_
                                              get_available_styles)
 from httpie.plugins.builtin import BuiltinAuthPlugin
 from httpie.plugins.registry import plugin_manager
-from httpie.ssl_ import AVAILABLE_SSL_VERSION_ARG_MAPPING, DEFAULT_SSL_CIPHERS
+from httpie.ssl_ import AVAILABLE_SSL_VERSION_ARG_MAPPING, DEFAULT_SSL_CIPHERS_STRING
+
+
+# Man pages are static (built when making a release).
+# We use this check to not include generated, system-specific information there (e.g., default --ciphers).
+IS_MAN_PAGE = bool(os.environ.get('HTTPIE_BUILDING_MAN_PAGES'))
+
 
 options = ParserSpec(
     'http',
     description=f'{__doc__.strip()} <https://httpie.io>',
     epilog="""
-    To learn more, you can try:
-        -> running 'http --manual'
-        -> visiting our full documentation at https://httpie.io/docs/cli
-
     For every --OPTION there is also a --no-OPTION that reverts OPTION
     to its default value.
 
     Suggestions and bug reports are greatly appreciated:
-        https://github.com/httpie/httpie/issues
+        https://github.com/httpie/cli/issues
     """,
+    source_file=__file__
 )
-
 
 #######################################################################
 # Positional arguments.
 #######################################################################
 
 positional_arguments = options.add_group(
-    'Positional Arguments',
+    'Positional arguments',
     description="""
     These arguments come after any flags and in the order they are listed here.
     Only URL is required.
@@ -145,7 +148,7 @@ positional_arguments.add_argument(
 # Content type.
 #######################################################################
 
-content_types = options.add_group('Predefined Content Types')
+content_types = options.add_group('Predefined content types')
 
 content_types.add_argument(
     '--json',
@@ -219,7 +222,7 @@ content_types.add_argument(
 # Content processing.
 #######################################################################
 
-processing_options = options.add_group('Content Processing Options')
+processing_options = options.add_group('Content processing options')
 
 processing_options.add_argument(
     '--compress',
@@ -236,6 +239,7 @@ processing_options.add_argument(
 
     """,
 )
+
 
 #######################################################################
 # Output processing
@@ -284,7 +288,7 @@ _unsorted_kwargs = {
     'dest': 'format_options',
 }
 
-output_processing = options.add_group('Output Processing')
+output_processing = options.add_group('Output processing')
 
 output_processing.add_argument(
     '--pretty',
@@ -398,7 +402,7 @@ output_processing.add_argument(
 # Output options
 #######################################################################
 
-output_options = options.add_group('Output Options')
+output_options = options.add_group('Output options')
 
 output_options.add_argument(
     '--print',
@@ -494,14 +498,7 @@ output_options.add_argument(
     '-P',
     dest='output_options_history',
     metavar='WHAT',
-    short_help='--print for intermediary requests/responses.',
-    help="""
-    The same as --print, -p but applies only to intermediary requests/responses
-    (such as redirects) when their inclusion is enabled with --all. If this
-    options is not specified, then they are formatted the same way as the final
-    response.
-
-    """,
+    help=Qualifiers.SUPPRESS,
 )
 output_options.add_argument(
     '--stream',
@@ -620,6 +617,7 @@ sessions.add_argument(
     """,
 )
 
+
 #######################################################################
 # Authentication
 #######################################################################
@@ -640,7 +638,7 @@ def format_auth_help(auth_plugins_mapping, *, isolation_mode: bool = False):
             if issubclass(auth_plugin, BuiltinAuthPlugin)
         ]
         text += '\n'
-        text += 'For finding out all available authentication types in your system, try:\n\n'
+        text += 'To see all available auth types on your system, including ones installed via plugins, run:\n\n'
         text += '    $ http --auth-type'
 
     auth_types = '\n\n    '.join(
@@ -656,7 +654,7 @@ def format_auth_help(auth_plugins_mapping, *, isolation_mode: bool = False):
                 ''
                 if not plugin.description
                 else '\n      '
-                + ('\n      '.join(textwrap.wrap(plugin.description)))
+                     + ('\n      '.join(textwrap.wrap(plugin.description)))
             ),
         )
         for plugin in auth_plugins
@@ -836,23 +834,36 @@ ssl.add_argument(
 
     """,
 )
+
+CIPHERS_CURRENT_DEFAULTS = (
+    """
+    See `http --help` for the default ciphers list on you system.
+
+    """
+    if IS_MAN_PAGE else
+    f"""
+    By default, the following ciphers are used on your system:
+
+    {DEFAULT_SSL_CIPHERS_STRING}
+
+    """
+)
 ssl.add_argument(
     '--ciphers',
     short_help='A string in the OpenSSL cipher list format.',
     help=f"""
 
-    A string in the OpenSSL cipher list format. By default, the following
-    is used:
+    A string in the OpenSSL cipher list format.
 
-    {DEFAULT_SSL_CIPHERS}
+    {CIPHERS_CURRENT_DEFAULTS}
 
-    """,
+    """
 )
 ssl.add_argument(
     '--cert',
     default=None,
     type=readable_file_arg,
-    short_help='Specifys a local cert to use as client side SSL certificate.',
+    short_help='Specifies a local cert to use as the client-side SSL certificate.',
     help="""
     You can specify a local cert to use as client side SSL certificate.
     This file may either contain both private key and certificate or you may

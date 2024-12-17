@@ -15,7 +15,7 @@ jobs:
 
     strategy:
       # If any of the stages fail, then we'll stop the action
-      # to give release manager time to investigate the underyling
+      # to give release manager time to investigate the underlying
       # issue.
       fail-fast: true
       matrix:
@@ -34,7 +34,8 @@ jobs:
         id: build
 
       - uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAP_STORE_LOGIN }}
         with:
-          store_login: ${{ secrets.SNAP_STORE_LOGIN }}
           snap: ${{ steps.build.outputs.snap }}
           release: ${{ matrix.level }}
